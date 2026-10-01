@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { Room } from '../server/room.js';
+import { RULE_DEFAULTS,RECONNECT_MS } from '../shared/config.js';
+const storage=()=>({db:{saves:{}},flush:async()=>{}}),profile=id=>({id,name:id,colour:'#ffba53',owned:[],equipped:{},achievements:[]});
+function make(){const s=storage(),r=new Room('ABCDEF','a',1,RULE_DEFAULTS,s);return {s,r,a:r.join(profile('a'),'A','a')};}
+test('Expired reconnect slots cannot bypass six-player capacity',()=>{const {r,a}=make();r.disconnect('a','a');a.disconnectedAt=Date.now()-RECONNECT_MS-1;for(let i=0;i<6;i++)r.join(profile('p'+i),'P'+i,'s'+i);assert.equal(r.players.size,6);assert.throws(()=>r.join(a.profile,'A','new'),/ROOM_FULL/);});
+test('Locked challenge reroll does not charge tickets',()=>{const {r,a}=make();a.x=-6;a.z=-17;r.challenge={done:false};const tickets=r.tickets;assert.throws(()=>r.reroll(a,'challenge'),/CHALLENGE_LOCKED/);assert.equal(r.tickets,tickets);});
+test('Held physical items survive day generation and disk load',async()=>{const {s,r,a}=make();a.x=-8;a.z=17;r.pickup(a,'basketball');r.day=2;r.prepareDay();assert.equal(r.props.filter(p=>p.id==='basketball').length,1);assert.equal(r.props.find(p=>p.id==='basketball').holder,'a');await r.save();const loaded=new Room('LOADED','a',1,RULE_DEFAULTS,s,s.db.saves['a:1']);const p=loaded.join(a.profile,'A','new');loaded.drop(p);assert.equal(loaded.props.find(q=>q.id==='basketball').holder,undefined);});
+test('Elevator secret awards a ticket at most once',()=>{const {r,a}=make();r.startShift();a.x=0;a.z=19;const before=r.tickets;r.elevator(a,'1423');r.elevator(a,'1423');assert.equal(r.tickets,before+1);});
+test('Finished ending and results persist across process restart',async()=>{const {s,r,a}=make();r.state='ENDING';r.finale(a,'safe');await r.save();const restored=new Room('LOADED','a',1,RULE_DEFAULTS,s,s.db.saves['a:1']);assert.equal(restored.state,'ENDING');assert.equal(restored.ending.type,'debtfree');assert.throws(()=>restored.finale(restored.join(a.profile,'A','new'),'gamble'));});
+test('Public snapshots never expose master seed, RNG, deck or hazards',()=>{const {r,a}=make();r.startShift();const t=r.tables[0];a.x=t.x;a.z=t.z;r.placeBet(a,{tableId:t.id,amount:'10'});const snapshot=JSON.stringify(r.serialize());assert.ok(!snapshot.includes(r.master));assert.ok(!snapshot.includes('"private"'));assert.ok(!snapshot.includes('"deck"'));assert.ok(!snapshot.includes('threshold'));});

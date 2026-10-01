@@ -1,0 +1,242 @@
+﻿[
+    {
+        "path":  ".dockerignore",
+        "bytes":  54,
+        "sha256":  "de93f9f050368952a6c0d4073560986e658cfada28047120f35e7a476ff4681e"
+    },
+    {
+        "path":  ".env.example",
+        "bytes":  375,
+        "sha256":  "784524dbfd8124890f79169cdbc88428aadfb50493e146d73bee906dabe11891"
+    },
+    {
+        "path":  ".gitignore",
+        "bytes":  62,
+        "sha256":  "dd266f682d84831985ac9ef29dd31dea529e06c5e92b2d3e39cede53c9e237d5"
+    },
+    {
+        "path":  "assets/favicon.svg",
+        "bytes":  240,
+        "sha256":  "d13e3f7d8eb5ced6172424d884416367b46728f427847247ad038f2e336c2ad4"
+    },
+    {
+        "path":  "assets/fonts.css",
+        "bytes":  96,
+        "sha256":  "7eb38db59d05c15f87cf117fb5f470567d6d6361c96bcc1669d5ebaa12a5c691"
+    },
+    {
+        "path":  "assets/noise.svg",
+        "bytes":  250,
+        "sha256":  "62f702afb3a36048bb9a4ff6380cd87d7cf1faecce53c2f0702d2b1313b6c0bf"
+    },
+    {
+        "path":  "assets/ORIGINAL-ASSETS.md",
+        "bytes":  377,
+        "sha256":  "3b818b596806694aae55b05b373b8e07f3b0efa4cda5ac533082c98854087820"
+    },
+    {
+        "path":  "client/art.js",
+        "bytes":  13995,
+        "sha256":  "143603a6e9c71ba803b55990d84674945f7ab4d0421aa2d1505723ad7d9dfbdb"
+    },
+    {
+        "path":  "client/audio.js",
+        "bytes":  5826,
+        "sha256":  "fe4ced69b40fb175527951efc7efe65c392ed6c8c78d1f17819c9db63c88f099"
+    },
+    {
+        "path":  "client/i18n.js",
+        "bytes":  998,
+        "sha256":  "12554d7b6e2b77837456e9bc8a22550445c39f2cc8a8e2d4d7feb4d4a035ff5c"
+    },
+    {
+        "path":  "client/lang/en.js",
+        "bytes":  27032,
+        "sha256":  "1c0f77e8ecfe9bb674ff7845207b6084691660aa2f65bf4c75ce8e3ebe780870"
+    },
+    {
+        "path":  "client/main.js",
+        "bytes":  16007,
+        "sha256":  "662b7c1a862e7230b16ca7bbdbdffad454da84b053361f8c8b273002b942925d"
+    },
+    {
+        "path":  "client/settings.js",
+        "bytes":  1616,
+        "sha256":  "16d854adc544b85b3202bc6eba1e2833a6f64beecb21382e299a5dbbd4fed163"
+    },
+    {
+        "path":  "client/style.css",
+        "bytes":  14442,
+        "sha256":  "c53dbc8bb63f52682f27ff19747dc5a186a3ba77b1841922c58fee9261cf285a"
+    },
+    {
+        "path":  "client/ui.js",
+        "bytes":  36694,
+        "sha256":  "c27318c3db41a382b6203e9452b811566e9f88f16f7ca13ac03d54dc08973527"
+    },
+    {
+        "path":  "client/voice.js",
+        "bytes":  5063,
+        "sha256":  "bdb0e9b22178be20fcde9bdee224b8415b4d31af920ddae59d9de2a3ee882deb"
+    },
+    {
+        "path":  "client/world.js",
+        "bytes":  41164,
+        "sha256":  "4630bbb216f358b4c18ef507390a766de8b71bba3ca971fa40684759d4c0dbd7"
+    },
+    {
+        "path":  "data/.gitkeep",
+        "bytes":  1,
+        "sha256":  "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+        "path":  "Dockerfile",
+        "bytes":  539,
+        "sha256":  "ad8ef217c96b26033fd04ea09c02067a89ec225de71bcc28174f4f438234b490"
+    },
+    {
+        "path":  "fly.toml",
+        "bytes":  540,
+        "sha256":  "9066a23c1490cac83ca2efccae7ad0733d1ec3b4f9dd1bfaa3cd907ebec21f26"
+    },
+    {
+        "path":  "package.json",
+        "bytes":  673,
+        "sha256":  "a653dc1bddab51be4f45a67c7c2af2a537e66ba514d887d8c942d3507a73a86d"
+    },
+    {
+        "path":  "package-lock.json",
+        "bytes":  42656,
+        "sha256":  "c828bb67d2dfc13eb931c8092f336ec53a83f86340f2df1a26282dbb88a292c8"
+    },
+    {
+        "path":  "public/index.html",
+        "bytes":  1234,
+        "sha256":  "d48083f4e45af444e0ef09f7c76e0b415d45c15aa6c551fa7193eec7f67d56ec"
+    },
+    {
+        "path":  "public/robots.txt",
+        "bytes":  26,
+        "sha256":  "331ea9090db0c9f6f597bd9840fd5b171830f6e0b3ba1cb24dfa91f0c95aedc1"
+    },
+    {
+        "path":  "railway.toml",
+        "bytes":  184,
+        "sha256":  "aded9cca0658817f111464fe2ee8929c0997dfc80a4656bdaa3552bb52c879d3"
+    },
+    {
+        "path":  "README.md",
+        "bytes":  9153,
+        "sha256":  "2c48ac6e5ce3b815c16859aaeab4f5679e129ba0e6b21ba06719f17b6be9c792"
+    },
+    {
+        "path":  "render.yaml",
+        "bytes":  388,
+        "sha256":  "54f9cc1a93b4dbe8d552903c43ebf294410a2e817cea7157a83b67cd94ec3a11"
+    },
+    {
+        "path":  "scripts/check.js",
+        "bytes":  574,
+        "sha256":  "af6d81203d2eed5cd1367c58aeeba0c69296a40bfc8e818299400c422838c69b"
+    },
+    {
+        "path":  "server/games.js",
+        "bytes":  10916,
+        "sha256":  "a4bbc50b5aa8fd43ed120b2ad104fbc471b46fc2f0049578c7122b408acaf67a"
+    },
+    {
+        "path":  "server/index.js",
+        "bytes":  10820,
+        "sha256":  "68e291bc45b0018dff698a34e55cdc755662ca440a4a6fce8c8f0446743ba863"
+    },
+    {
+        "path":  "server/rng.js",
+        "bytes":  658,
+        "sha256":  "738f8e9afe86fa2e9b075af9cfe6d3bcf5a7da9c061a85fa6e1ef1ef60fd6d9b"
+    },
+    {
+        "path":  "server/room.js",
+        "bytes":  40259,
+        "sha256":  "71388ca943ffae3cfdb1184b7697618e50d722e03af1d4bb77978ae5135d1226"
+    },
+    {
+        "path":  "server/storage.js",
+        "bytes":  785,
+        "sha256":  "4765efa98f6ea477fc085192345041e88f94f135326e510e87be1d1ddf8daf20"
+    },
+    {
+        "path":  "shared/config.js",
+        "bytes":  7274,
+        "sha256":  "69eb9119a8a584ded72e4775a6ab3598947c0a610be84db5f66f2cc1c013a6b7"
+    },
+    {
+        "path":  "shared/money.js",
+        "bytes":  607,
+        "sha256":  "95c209fc0f177a2d56d9ad3944e5379fed8e54927336c06c4722e4f313ace86f"
+    },
+    {
+        "path":  "shared/physics.js",
+        "bytes":  2015,
+        "sha256":  "c5957f4a2e131827057c75493dbab528cb27c264ec3a4780fb6f15fd34d0d6f7"
+    },
+    {
+        "path":  "tests/browser.js",
+        "bytes":  8198,
+        "sha256":  "50ecd76d84b17c0e94a7ced89be8799304b1cd7a88982a00d348ec411ccd67aa"
+    },
+    {
+        "path":  "tests/campaign.test.js",
+        "bytes":  3012,
+        "sha256":  "cce1fa7d1195d4296b0894078242aa77857472058fe04c475c2e91e2c09379aa"
+    },
+    {
+        "path":  "tests/core.test.js",
+        "bytes":  6783,
+        "sha256":  "ad5902f384496e1075f710d6346be62232517b4c4c98d5072d7720d91fadd44f"
+    },
+    {
+        "path":  "tests/elevator.test.js",
+        "bytes":  643,
+        "sha256":  "6fa923ecc0160d668f65c8631c0e55e46e1569d876f875698f1c064413898c5a"
+    },
+    {
+        "path":  "tests/http.js",
+        "bytes":  1086,
+        "sha256":  "3e1326602b9d3aa82d7b959713abe875c99a164de3c0c6c002ca4540e7c1779f"
+    },
+    {
+        "path":  "tests/items.test.js",
+        "bytes":  2505,
+        "sha256":  "719539ea61bb72b7ded20db535c951ec20865c66ff0f6b42c4c42b6cb230d490"
+    },
+    {
+        "path":  "tests/load.js",
+        "bytes":  7308,
+        "sha256":  "4a8c5c47166e4db65763c21b41c9b497a4358c842d6608f4bd8d8234676816ba"
+    },
+    {
+        "path":  "tests/physics.test.js",
+        "bytes":  1464,
+        "sha256":  "3aba23752d5552d7b23ca6448346158a639ce6cfd215caffe0f2f1000eb5ac84"
+    },
+    {
+        "path":  "tests/production.js",
+        "bytes":  1477,
+        "sha256":  "84e395fd4b3b5da49cdbd855f012561716234503da78002aa7bc71caefbb0965"
+    },
+    {
+        "path":  "tests/security.test.js",
+        "bytes":  2481,
+        "sha256":  "34c2e95e3b0a5de8346a2b2fabc3a5a923345bd71c8e214a394f9ba90a84f93c"
+    },
+    {
+        "path":  "tests/ui.test.js",
+        "bytes":  2200,
+        "sha256":  "c5c5b35fc4e9bd4688665d4d927f8f3d7b442aaaf4b3c347931c3c2a5bcb7b50"
+    },
+    {
+        "path":  "tests/world.test.js",
+        "bytes":  2408,
+        "sha256":  "b03d926b92bcfa435951f0ac02323727990077b2cf639013848c92e20aca9b99"
+    }
+]

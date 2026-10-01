@@ -1,0 +1,65 @@
+import 'node:process';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import { randomBytes,createHash } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
+import express from 'express';
+import { createServer } from 'node:http';
+import { Server } from 'socket.io';
+import { Storage } from './storage.js';
+import { Room } from './room.js';
+import { BRAND,VERSION,COLOURS,COSMETICS,TICK_RATE,RECONNECT_MS } from '../shared/config.js';
+const root=path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const page=await readFile(path.join(root,'public/index.html'),'utf8');
+const importMapHash=createHash('sha256').update(page.match(/<script type="importmap">([^<]+)<\/script>/)[1]).digest('base64');
+try{process.loadEnvFile(path.join(root,'.env'));}catch{}
+const storage=await new Storage().load(),app=express(),http=createServer(app);
+const origin=process.env.PUBLIC_ORIGIN;
+const io=new Server(http,{maxHttpBufferSize:16384,serveClient:false,cors:origin?{origin}:undefined,pingTimeout:20000});
+const rooms=new Map();
+app.disable('x-powered-by');
+app.use((req,res,next)=>{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','same-origin');res.setHeader('Permissions-Policy','camera=(), microphone=(self), fullscreen=(self)');res.setHeader('Content-Security-Policy',`default-src 'self'; script-src 'self' 'sha256-${importMapHash}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' ws: wss:; media-src 'self' blob:; font-src 'self'; worker-src 'self' blob:`);next();});
+app.get('/health',(_,res)=>res.json({ok:true,version:VERSION,rooms:rooms.size}));
+app.get('/runtime-config',(_,res)=>res.json({version:VERSION,dev:process.env.NODE_ENV!=='production'&&process.env.DEV_ADMIN==='1',iceServers:[{urls:'stun:stun.l.google.com:19302'},...(process.env.TURN_URL?[{urls:process.env.TURN_URL,username:process.env.TURN_USERNAME,credential:process.env.TURN_CREDENTIAL}]:[])]}));
+for(const dir of ['client','shared','public','assets'])app.use(`/${dir}`,express.static(path.join(root,dir),{maxAge:process.env.NODE_ENV==='production'?'1h':0}));
+app.use('/vendor/three',express.static(path.join(root,'node_modules/three')));
+app.use('/vendor/socket',express.static(path.join(root,'node_modules/socket.io-client/dist')));
+app.get('/',(_,res)=>res.sendFile(path.join(root,'public/index.html')));
+const safeText=(s,max)=>String(s??'').replace(/[<>\x00-\x1f]/g,'').slice(0,max).trim();
+const makeCode=()=>{const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let code;do{code=Array.from(randomBytes(6),n=>alphabet[n%alphabet.length]).join('');}while(rooms.has(code));return code;};
+const errorKey=e=>/^[A-Z_]+$/.test(e.message)?e.message:'SERVER_ERROR';
+io.on('connection',socket=>{
+ let profile=null,room=null,player=null,bucket=100,at=Date.now();
+ const rate=(cost=1)=>{const now=Date.now();bucket=Math.min(100,bucket+(now-at)*0.06);at=now;if(bucket<cost)throw Error('RATE_LIMITED');bucket-=cost;};
+ const handler=(event,fn,cost=2)=>socket.on(event,async(raw={},ack=()=>{})=>{if(typeof ack!=='function')ack=()=>{};try{rate(cost);if(!raw||typeof raw!=='object'||Array.isArray(raw))throw Error('INVALID_MESSAGE');const result=await fn(raw);ack({ok:true,...result});}catch(e){ack({ok:false,error:errorKey(e)});}});
+ handler('hello',async d=>{if(d.version!==VERSION)throw Error('VERSION_MISMATCH');if(typeof d.token==='string'&&/^[a-f0-9]{64}$/.test(d.token))profile=storage.db.profiles[d.token];if(!profile){const token=randomBytes(32).toString('hex');profile={id:randomBytes(12).toString('hex'),token,name:'Guest',colour:COLOURS[Math.floor(Math.random()*COLOURS.length)],owned:[],equipped:{},achievements:[],created:Date.now()};storage.db.profiles[token]=profile;await storage.flush();}return {profile,slots:[1,2,3].map(n=>{const s=storage.db.saves[`${profile.id}:${n}`];return s?{slot:n,day:s.day,floor:s.floor,bank:s.bank,tickets:s.tickets,playerCount:s.playerCount,rules:s.rules,lastPlayed:s.lastPlayed}:null;})};});
+ const attach=(r,name)=>{if(room&&room!==r){room.disconnect(player.id,socket.id);socket.leave(room.code);}const previousSocket=r.players.get(profile.id)?.socketId;room=r;player=room.join(profile,safeText(name,20)||profile.name,socket.id);if(previousSocket&&previousSocket!==socket.id)io.sockets.sockets.get(previousSocket)?.disconnect(true);profile.name=player.name;socket.join(room.code);return {state:room.serialize(),playerId:player.id};};
+ handler('host',async d=>{if(!profile)throw Error('AUTH_REQUIRED');if(!Number.isInteger(d.slot)||d.slot<1||d.slot>3)throw Error('INVALID_SLOT');let existing=[...rooms.values()].find(r=>r.owner===profile.id&&r.slot===d.slot);if(existing)return attach(existing,d.name);const saved=storage.db.saves[`${profile.id}:${d.slot}`];const r=new Room(makeCode(),profile.id,d.slot,d.rules,storage,saved);rooms.set(r.code,r);const result=attach(r,d.name);await r.save();return result;},10);
+ handler('join',d=>{if(!profile)throw Error('AUTH_REQUIRED');const code=safeText(d.code,6).toUpperCase();const r=rooms.get(code);if(!r)throw Error('ROOM_NOT_FOUND');return attach(r,d.name);},8);
+ handler('action',d=>{
+  if(!room||!player||player.socketId!==socket.id)throw Error('NOT_IN_ROOM');if(typeof d.id!=='string'||d.id.length>64||typeof d.type!=='string')throw Error('INVALID_MESSAGE');
+  if(player.requests.has(d.id))return player.requests.get(d.id);
+  const actionRoom=room,actionPlayer=player,actionProfile=profile;
+  const result=actionRoom.enqueue(async()=>{const room=actionRoom,player=actionPlayer,profile=actionProfile;const a=d.payload||{};if(!a||typeof a!=='object'||Array.isArray(a))throw Error('INVALID_MESSAGE');let value={};
+   switch(d.type){case 'begin':room.begin(player);break;case 'ready':room.readiness(player);break;case 'bet':value=room.placeBet(player,a);break;case 'game':room.action(player,a);break;case 'buy':room.purchase(player,a.item);break;case 'pickup':room.pickup(player,a.id);break;case 'drop':room.drop(player,!!a.throwing);break;case 'use':room.use(player,a);break;case 'challenge':room.selectChallenge(player,a.id);break;case 'reroll':room.reroll(player,a.kind);break;case 'exchange':room.exchange(player,a.part,a.confirmed);break;case 'heal':room.heal(player,a.part);break;case 'cosmetic':room.cosmetic(player,a.id);break;case 'equip':room.equip(player,a.id);break;case 'colour':if(!COLOURS.includes(a.colour))throw Error('INVALID_COLOUR');profile.colour=a.colour;room.changed();room.save();break;case 'emote':room.emote(player,a.id);break;case 'continue':room.continue(player);break;case 'ending':room.finale(player,a.choice);break;case 'secret':room.secret(player,a.id);break;case 'elevator':room.elevator(player,a.sequence);break;case 'admin':value=room.admin(player,a.command);break;
+   case 'finish':if(room.state!=='CASINO')throw Error('NOT_IN_CASINO');if(room.rules.timer)throw Error('TIMER_RUNNING');room.votes.add(player.id);if(room.hasVote(room.votes))room.endShift();break;
+   case 'arcade':room.arcade(player,a.press);break;
+   case 'ping':{const pos=a.position;if(!pos||!['x','y','z'].every(k=>Number.isFinite(pos[k]))||Math.hypot(pos.x-player.x,pos.z-player.z)>30)throw Error('INVALID_POSITION');room.effect('ping',{player:player.id,position:pos,kind:['LOOK','GAME','ITEM','DANGER','COME','READY'].includes(a.kind)?a.kind:'LOOK'});break;}
+   default:throw Error('INVALID_ACTION');
+  }if(['begin','ready','bet','game','buy','pickup','drop','use','challenge','reroll','exchange','heal','cosmetic','equip','colour','continue','ending','admin'].includes(d.type)){try{await room.storage.queue;}catch{throw Error('SAVE_COULD_NOT_LOAD');}}return value;});player.requests.set(d.id,result);if(player.requests.size>500)player.requests.delete(player.requests.keys().next().value);return result;
+ });
+ socket.on('input',d=>{try{rate(0.7);if(!player||!room||player.socketId!==socket.id||!d||typeof d!=='object'||!Number.isFinite(d.yaw)||!Number.isFinite(d.pitch)||!Number.isInteger(d.seq))return;if(d.seq<=(player.input.seq||0))return;player.input={seq:d.seq,yaw:d.yaw%(Math.PI*2),pitch:Math.max(-1.45,Math.min(1.45,d.pitch)),...Object.fromEntries(['forward','back','left','right','jump','sprint','crouch'].map(k=>[k,!!d[k]]))};}catch{}});
+ handler('chat',d=>{if(!room||!player)throw Error('NOT_IN_ROOM');const text=safeText(d.text,240);if(text){room.messages.push({id:randomBytes(6).toString('hex'),player:player.id,name:player.name,text,time:Date.now()});room.messages=room.messages.slice(-80);room.changed();}return {};},8);
+ handler('signal',d=>{if(!room?.rules.voice||!player)throw Error('VOICE_DISABLED');const target=room.players.get(d.to);if(!target?.connected||!d.signal||JSON.stringify(d.signal).length>12000)throw Error('INVALID_SIGNAL');io.to(target.socketId).emit('signal',{from:player.id,signal:d.signal});return {};},2);
+ handler('voice',d=>{if(!player||!room)throw Error('NOT_IN_ROOM');player.speaking=!!d.speaking;player.voiceAt=Date.now();player.micAllowed=!!d.allowed;return {};},0.5);
+ handler('profile',async d=>{if(!profile)throw Error('AUTH_REQUIRED');if(d.colour&&COLOURS.includes(d.colour))profile.colour=d.colour;if(d.equipped){if(typeof d.equipped!=='object'||Array.isArray(d.equipped))throw Error('INVALID_MESSAGE');for(const [category,id] of Object.entries(d.equipped)){if(!profile.owned.includes(id)||!COSMETICS.some(c=>c.id===id&&c.category===category))throw Error('NOT_OWNED');}profile.equipped=d.equipped;}await storage.flush();if(room)room.changed();return {profile};});
+ handler('leave',()=>{if(room){room.disconnect(player.id,socket.id);socket.leave(room.code);}room=null;player=null;return {};});
+ handler('sync',()=>({state:room?.serialize(),profile}));
+ handler('ping',()=>({time:Date.now()}),0.2);
+ socket.on('disconnect',()=>{if(room&&player)room.disconnect(player.id,socket.id);});
+});
+let previous=Date.now(),saving=0;
+const ticker=setInterval(()=>{const now=Date.now(),dt=Math.min(0.1,(now-previous)/1000);previous=now;for(const [code,room] of rooms){try{room.tick(dt,now);if(room.connected().length){io.to(code).emit('state',room.serialize());if(room.effects.length){io.to(code).emit('effects',room.effects);room.effects=[];}}if(room.destroyAt&&now>room.destroyAt){room.save();rooms.delete(code);}}catch(e){console.error('Room tick:',e);}}if(now-saving>15000){saving=now;for(const r of rooms.values())r.save();}},1000/TICK_RATE);
+http.listen(Number(process.env.PORT)||3000,process.env.HOST||'0.0.0.0',()=>console.log(`${BRAND.title} server: http://localhost:${process.env.PORT||3000} · ${process.env.NODE_ENV||'development'}`));
+async function shutdown(){clearInterval(ticker);await Promise.all([...rooms.values()].map(r=>r.save()));await storage.flush();io.close();http.close(()=>process.exit(0));setTimeout(()=>process.exit(0),3000).unref();}
+process.on('SIGINT',shutdown);process.on('SIGTERM',shutdown);

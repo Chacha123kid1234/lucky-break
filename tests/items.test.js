@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { Room } from '../server/room.js';
+import { RULE_DEFAULTS } from '../shared/config.js';
+const profile=id=>({id,colour:'#ffba53',owned:[],equipped:{},achievements:[]});
+function make(){const r=new Room('ABCDEF','a',1,RULE_DEFAULTS,{db:{saves:{}},flush:async()=>{}}),a=r.join(profile('a'),'A','a'),b=r.join(profile('b'),'B','b');r.startShift();return {r,a,b};}
+function give(r,p,item){p.held={id:`test-${item}`,type:'item',item};r.ensureHeldProp(p);}
+test('All-in protection and passive cover settle authoritatively',()=>{const {r,a}=make(),t=r.tables[0];a.x=t.x;a.z=t.z;give(r,a,'sun');r.use(a);assert.equal(r.maximum(a,t),1000n);r.placeBet(a,{tableId:t.id,amount:'1000'});t.round.multiplier=0;t.round.phase='done';r.settle(t);assert.equal(r.bank,'1000');assert.equal(a.buffs.sun,undefined);a.passives=['cover'];r.placeBet(a,{tableId:t.id,amount:'100'});t.round.multiplier=0;t.round.phase='done';r.settle(t);assert.equal(r.bank,'920');});
+test('Amplifier strengthens guardian and juice without changing their type',()=>{const {r,a,b}=make();a.x=b.x=0;a.z=b.z=0;give(r,a,'amplifier');r.use(a,{target:b.id});give(r,b,'guardian');r.use(b);assert.equal(b.buffs.guardianStrength,1);give(r,b,'juice');r.use(b);assert.equal(b.buffs.juiceStrength,.35*1.5);});
+test('Rewind shifts timestamps but preserves fractional effect strengths',()=>{const {r,a}=make(),now=Date.now();r.startedAt=now-70000;r.snapshots=[];a.buffs={juice:now+10000,juiceStrength:.525,guardian:now+15000,guardianStrength:.85};r.snapshot(now-65000);r.rewind(now);assert.equal(a.buffs.juiceStrength,.525);assert.equal(a.buffs.guardianStrength,.85);assert.equal(a.buffs.juice,now+70000);});
+test('Quota blaster is non-graphic and restores bank using a real body part',()=>{const {r,a}=make(),before=BigInt(r.bank);give(r,a,'blaster');r.use(a);assert.equal(a.body.leftEye,false);assert.ok(BigInt(r.bank)>=before+BigInt(r.quota)/3n-1n);assert.equal(a.held,null);});
+test('Actual microphone activity gates karaoke profit when permission exists',()=>{const {r,a,b}=make(),t=r.tables[0];a.x=b.x=t.x;a.z=b.z=t.z;b.buffs={mic:Date.now()+30000,micStrength:.15};b.micAllowed=true;b.speaking=false;r.placeBet(a,{tableId:t.id,amount:'100'});t.round.multiplier=2;t.round.phase='done';r.settle(t);assert.equal(t.round.profit,'100');b.speaking=true;r.placeBet(a,{tableId:t.id,amount:'100'});t.round.multiplier=2;t.round.phase='done';r.settle(t);assert.equal(t.round.profit,'115');});

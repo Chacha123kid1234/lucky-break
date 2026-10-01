@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: lucky-break
+    runtime: node
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /var/data
+      - key: DEV_ADMIN
+        value: 0
+    disk:
+      name: lucky-break-saves
+      mountPath: /var/data
+      sizeGB: 1
